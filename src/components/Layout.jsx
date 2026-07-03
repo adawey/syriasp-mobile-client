@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Home, CreditCard, ShoppingBag, Bell, ShieldCheck, LogOut } from 'lucide-react';
+import { Home, CreditCard, ShoppingBag, Bell, User, LogOut } from 'lucide-react';
 
 export default function Layout() {
     const { user, logout } = useAuth();
@@ -69,13 +69,13 @@ export default function Layout() {
                     <span>الإشعارات</span>
                 </NavLink>
                 <NavLink
-                    to="/identity"
+                    to="/profile"
                     className={({ isActive }) =>
                         `flex flex-col items-center text-xs ${isActive ? 'text-blue-600' : 'text-gray-500'}`
                     }
                 >
-                    <ShieldCheck size={20} />
-                    <span>التوثيق</span>
+                    <User size={20} />
+                    <span>حسابي</span>
                 </NavLink>
             </nav>
         </div>

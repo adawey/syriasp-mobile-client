@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import PinPage from './pages/PinPage';
 import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
 import IdentityPage from './pages/IdentityPage';
 import CardsPage from './pages/CardsPage';
 import CardDetailPage from './pages/CardDetailPage';
@@ -48,6 +49,7 @@ function AppRoutes() {
                 }
             >
                 <Route index element={<DashboardPage />} />
+                <Route path="profile" element={<ProfilePage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="orders" element={<OrdersPage />} />
                 <Route path="identity" element={<IdentityPage />} />

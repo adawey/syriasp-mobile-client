@@ -45,6 +45,9 @@ export const getUser = () => api.get('/user');
 
 export const logout = () => api.post('/auth/logout');
 
+// Countries
+export const getCountries = () => api.get('/auth/register/countries');
+
 // Identity Verification
 export const getVerificationStatus = () => api.get('/user/identity-verification/status');
 
