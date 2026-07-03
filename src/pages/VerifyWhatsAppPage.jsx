@@ -1,22 +1,53 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Phone, Send, CheckCircle } from 'lucide-react';
+import { Phone, Send, CheckCircle, ChevronDown } from 'lucide-react';
 import BackButton from '../components/BackButton';
 import api from '../lib/api';
 
+const countries = [
+    { name: 'سوريا', code: '+963', flag: '🇸🇾' },
+    { name: 'تركيا', code: '+90', flag: '🇹🇷' },
+    { name: 'مصر', code: '+20', flag: '🇪🇬' },
+    { name: 'العراق', code: '+964', flag: '🇮🇶' },
+    { name: 'السعودية', code: '+966', flag: '🇸🇦' },
+    { name: 'الإمارات', code: '+971', flag: '🇦🇪' },
+    { name: 'الأردن', code: '+962', flag: '🇯🇴' },
+    { name: 'لبنان', code: '+961', flag: '🇱🇧' },
+    { name: 'الكويت', code: '+965', flag: '🇰🇼' },
+    { name: 'قطر', code: '+974', flag: '🇶🇦' },
+    { name: 'البحرين', code: '+973', flag: '🇧🇭' },
+    { name: 'عُمان', code: '+968', flag: '🇴🇲' },
+    { name: 'ليبيا', code: '+218', flag: '🇱🇾' },
+    { name: 'تونس', code: '+216', flag: '🇹🇳' },
+    { name: 'الجزائر', code: '+213', flag: '🇩🇿' },
+    { name: 'المغرب', code: '+212', flag: '🇲🇦' },
+    { name: 'السودان', code: '+249', flag: '🇸🇩' },
+    { name: 'اليمن', code: '+967', flag: '🇾🇪' },
+    { name: 'فلسطين', code: '+970', flag: '🇵🇸' },
+    { name: 'ألمانيا', code: '+49', flag: '🇩🇪' },
+    { name: 'هولندا', code: '+31', flag: '🇳🇱' },
+    { name: 'السويد', code: '+46', flag: '🇸🇪' },
+    { name: 'فرنسا', code: '+33', flag: '🇫🇷' },
+    { name: 'بريطانيا', code: '+44', flag: '🇬🇧' },
+    { name: 'أمريكا', code: '+1', flag: '🇺🇸' },
+];
+
 export default function VerifyWhatsAppPage() {
     const { user, fetchUser } = useAuth();
-    const [phone, setPhone] = useState(user?.mobile || '');
+    const [countryCode, setCountryCode] = useState('+963');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [code, setCode] = useState('');
     const [step, setStep] = useState('phone'); // phone -> otp -> done
     const [loading, setLoading] = useState(false);
+
+    const phone = countryCode + phoneNumber;
 
     const whatsappVerified = !!user?.whatsapp_verified_at;
 
     const handleUpdatePhone = async e => {
         e.preventDefault();
-        if (!phone.trim()) {
+        if (!phoneNumber.trim()) {
             toast.error('أدخل رقم الواتساب');
             return;
         }
@@ -108,16 +139,34 @@ export default function VerifyWhatsAppPage() {
                 <form onSubmit={handleUpdatePhone} className="bg-white rounded-xl border p-4 space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">رقم الواتساب</label>
-                        <input
-                            type="tel"
-                            value={phone}
-                            onChange={e => setPhone(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                            placeholder="+963xxxxxxxxx"
-                            dir="ltr"
-                            required
-                        />
-                        <p className="text-xs text-gray-400 mt-1">أدخل الرقم مع مفتاح الدولة</p>
+                        <div className="flex gap-2" dir="ltr">
+                            <div className="relative">
+                                <select
+                                    value={countryCode}
+                                    onChange={e => setCountryCode(e.target.value)}
+                                    className="appearance-none w-[120px] px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white text-sm pr-8"
+                                >
+                                    {countries.map(c => (
+                                        <option key={c.code} value={c.code}>
+                                            {c.flag} {c.code}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown
+                                    size={14}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                />
+                            </div>
+                            <input
+                                type="tel"
+                                value={phoneNumber}
+                                onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                                placeholder="9xxxxxxxx"
+                                required
+                            />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">اختر الدولة ثم أدخل الرقم بدون الصفر</p>
                     </div>
                     <button
                         type="submit"
