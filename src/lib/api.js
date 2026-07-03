@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// In dev: proxy via Vite (avoids CORS). In prod: direct URL.
-const BASE_URL = import.meta.env.DEV ? '/api' : 'https://sw-games.net/api';
+// Always use relative path - proxied via Nginx in production, Vite in dev
+const BASE_URL = '/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
