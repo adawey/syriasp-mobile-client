@@ -9,7 +9,7 @@ export default defineConfig({
             '/api': {
                 target: 'https://sw-games.net',
                 changeOrigin: true,
-                secure: true,
+                secure: false,
             },
         },
     },
