@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Always use relative path - proxied via Nginx in production, Vite in dev
-const BASE_URL = '/api';
+// Direct API calls to backend
+const BASE_URL = 'https://sw-games.net/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
