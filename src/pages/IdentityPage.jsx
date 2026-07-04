@@ -26,7 +26,7 @@ import BackButton from '../components/BackButton';
 
 export default function IdentityPage() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, whatsappVerificationRequired } = useAuth();
     const [status, setStatus] = useState(null);
     const [history, setHistory] = useState([]);
     const [kycStatuses, setKycStatuses] = useState([]);
@@ -37,7 +37,7 @@ export default function IdentityPage() {
     const [selfieImage, setSelfieImage] = useState(null);
 
     const emailVerified = !!user?.email_verified_at;
-    const whatsappVerified = !!user?.whatsapp_verified_at;
+    const whatsappVerified = !whatsappVerificationRequired || !!user?.whatsapp_verified_at;
 
     useEffect(() => {
         loadData();

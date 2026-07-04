@@ -6,7 +6,7 @@ import { Phone, CheckCircle, Loader2 } from 'lucide-react';
 import BackButton from '../components/BackButton';
 
 export default function VerifyWhatsAppPage() {
-    const { user, fetchUser } = useAuth();
+    const { user, fetchUser, whatsappVerificationRequired } = useAuth();
     const [code, setCode] = useState('');
     const [step, setStep] = useState('sending'); // sending -> otp -> done
     const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function VerifyWhatsAppPage() {
 
     // Auto-send OTP when page opens
     useEffect(() => {
-        if (!whatsappVerified) {
+        if (whatsappVerificationRequired && !whatsappVerified) {
             sendOtp();
         }
     }, []);
@@ -63,16 +63,20 @@ export default function VerifyWhatsAppPage() {
         }
     };
 
-    if (whatsappVerified || step === 'done') {
+    if (!whatsappVerificationRequired || whatsappVerified || step === 'done') {
         return (
             <div className="space-y-5">
                 <BackButton to="/identity" />
                 <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
                     <CheckCircle className="mx-auto text-green-500 mb-3" size={48} />
-                    <p className="font-semibold text-green-800">رقم الواتساب مؤكّد</p>
-                    <p className="text-sm text-green-600 mt-1" dir="ltr">
-                        {user?.full_number || user?.mobile}
+                    <p className="font-semibold text-green-800">
+                        {!whatsappVerificationRequired ? 'تأكيد الواتساب غير مطلوب حالياً' : 'رقم الواتساب مؤكّد'}
                     </p>
+                    {whatsappVerificationRequired && (
+                        <p className="text-sm text-green-600 mt-1" dir="ltr">
+                            {user?.full_number || user?.mobile}
+                        </p>
+                    )}
                 </div>
             </div>
         );

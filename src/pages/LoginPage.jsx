@@ -10,7 +10,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { saveToken, setUser, token } = useAuth();
+    const { saveToken, setUser, token, setWhatsappVerificationRequired } = useAuth();
     const navigate = useNavigate();
 
     // Redirect if already logged in
@@ -34,6 +34,9 @@ export default function LoginPage() {
             saveToken(data.token);
             if (data.data?.user) {
                 setUser(data.data.user);
+            }
+            if (data.data?.whatsapp_verification_required !== undefined) {
+                setWhatsappVerificationRequired(data.data.whatsapp_verification_required);
             }
 
             toast.success(data.message || 'تم تسجيل الدخول');

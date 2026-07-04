@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
     const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
     const [pinVerified, setPinVerified] = useState(false);
+    const [whatsappVerificationRequired, setWhatsappVerificationRequired] = useState(true);
 
     useEffect(() => {
         if (token) {
@@ -21,6 +22,9 @@ export function AuthProvider({ children }) {
         try {
             const res = await getUser();
             setUser(res.data.data.user || res.data.data);
+            if (res.data.data.whatsapp_verification_required !== undefined) {
+                setWhatsappVerificationRequired(res.data.data.whatsapp_verification_required);
+            }
         } catch {
             localStorage.removeItem('token');
             setToken(null);
@@ -49,7 +53,19 @@ export function AuthProvider({ children }) {
 
     return (
         <AuthContext.Provider
-            value={{ user, setUser, token, saveToken, logout, loading, pinVerified, setPinVerified, fetchUser }}
+            value={{
+                user,
+                setUser,
+                token,
+                saveToken,
+                logout,
+                loading,
+                pinVerified,
+                setPinVerified,
+                fetchUser,
+                whatsappVerificationRequired,
+                setWhatsappVerificationRequired,
+            }}
         >
             {children}
         </AuthContext.Provider>
