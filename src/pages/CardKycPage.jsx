@@ -173,7 +173,9 @@ export default function CardKycPage() {
                     <p className="font-medium text-yellow-800 text-sm">متطلبات قبل التقديم:</p>
                     <CheckItem ok={status.readiness.country_set} label="تحديد الدولة في الملف الشخصي" />
                     <CheckItem ok={status.readiness.mobile_set} label="إضافة رقم الهاتف" />
-                    <CheckItem ok={status.readiness.whatsapp_verified} label="توثيق رقم الواتساب" />
+                    {status.readiness.whatsapp_verification_required && (
+                        <CheckItem ok={status.readiness.whatsapp_verified} label="توثيق رقم الواتساب" />
+                    )}
                 </div>
             )}
 
