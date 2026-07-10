@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { installDevInterceptors } from './devLogger';
 
 /**
  * =================================================================
@@ -46,10 +47,19 @@ api.interceptors.request.use(config => {
     return config;
 });
 
+// Intercept 401 (Unauthenticated / session expired) — clear token & redirect to login
 // Intercept 423 (PIN required) — redirect to /pin
 api.interceptors.response.use(
     response => response,
     error => {
+        if (error.response?.status === 401) {
+            // Session expired — clean up and redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('fcm_token');
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        }
         if (error.response?.status === 423) {
             // Avoid redirect loop if already on /pin
             if (!window.location.pathname.includes('/pin')) {
@@ -59,6 +69,9 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+// 🛠️ Dev Logger — يسجّل كل request/response للمطورين
+installDevInterceptors(api);
 
 // ─────────────────────────────────────────────────────────────
 // 🔐 Auth & Security

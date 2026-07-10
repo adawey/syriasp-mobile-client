@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Home, CreditCard, ShoppingBag, Bell, User, LogOut } from 'lucide-react';
+import DevPanel from './DevPanel';
 
 export default function Layout() {
     const { user, logout } = useAuth();
@@ -78,6 +79,9 @@ export default function Layout() {
                     <span>حسابي</span>
                 </NavLink>
             </nav>
+
+            {/* Dev Panel — يظهر فقط لليوزرات المحددة */}
+            <DevPanel />
         </div>
     );
 }

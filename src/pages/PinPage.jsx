@@ -38,8 +38,15 @@ import toast from 'react-hot-toast';
 import { Lock, ShieldPlus } from 'lucide-react';
 
 export default function PinPage() {
-    const { user, setPinVerified, fetchUser } = useAuth();
+    const { user, token, setPinVerified, fetchUser } = useAuth();
     const navigate = useNavigate();
+
+    // If session expired (no token or no user), redirect to login
+    useEffect(() => {
+        if (!token || (!user && !fetchUser)) {
+            navigate('/login', { replace: true });
+        }
+    }, [token, user, navigate]);
 
     // Determine if user has a PIN set
     const hasPin = user?.has_pin_code ?? user?.pin_code_set ?? true;
@@ -61,7 +68,7 @@ export default function PinPage() {
 function ConfirmPinView() {
     const [pin, setPin] = useState(['', '', '', '']);
     const [loading, setLoading] = useState(false);
-    const { setPinVerified } = useAuth();
+    const { setPinVerified, logout } = useAuth();
     const navigate = useNavigate();
     const inputsRef = useRef([]);
 
@@ -102,6 +109,11 @@ function ConfirmPinView() {
             toast.success('تم التحقق بنجاح');
             navigate('/', { replace: true });
         } catch (err) {
+            if (err.response?.status === 401) {
+                // Session expired — interceptor will handle redirect
+                toast.error('انتهت صلاحية الجلسة، الرجاء تسجيل الدخول من جديد');
+                return;
+            }
             const msg = err.response?.data?.message || err.response?.data?.msg || 'فشل التحقق';
             toast.error(msg);
             setPin(['', '', '', '']);
