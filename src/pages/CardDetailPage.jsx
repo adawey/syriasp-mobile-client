@@ -1,3 +1,58 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📱 صفحة تفاصيل البطاقة — عرض وإدارة بطاقة واحدة
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ─── APIs المستخدمة ───
+ *
+ * 1. GET /cards/{card}
+ *    Middleware: auth:sanctum + pin.recent
+ *    Response: { data: { card: { id, uuid, provider_code, name, masked_number, balance, status, status_label, created_at } } }
+ *
+ * 2. GET /cards/{card}/balance
+ *    Middleware: auth:sanctum + throttle:30,1 + pin.recent
+ *    Response: { data: { amount: 47.50, currency: "USD", symbol: "$" } }
+ *
+ * 3. GET /cards/{card}/transactions?per_page=20
+ *    Middleware: auth:sanctum + throttle:30,1
+ *    Response: {
+ *      data: {
+ *        transactions: [{ id, amount, fee_amount, total_amount, currency, type_description, narrative, status, created_at }],
+ *        pagination: { current_page, last_page, per_page, total }
+ *      }
+ *    }
+ *
+ * 4. GET /cards/{card}/info
+ *    Middleware: auth:sanctum + throttle:20,1 + pin.recent
+ *    Response: { data: { card: { uses_iframe, pan_url, masked_number, pan, cvv, expiry, status, status_label } } }
+ *    ⚠️ لو uses_iframe = true → استخدم pan_url بدل عرض PAN/CVV مباشرة
+ *
+ * 5. POST /cards/{card}/topup
+ *    Middleware: auth:sanctum + throttle:10,1 + pin.recent
+ *    Request: { amount: 25.00 }
+ *    Response (202): { data: { operation_id: 43, status: "pending" } }
+ *    ⚠️ عملية غير متزامنة → push notification عند الاكتمال
+ *
+ * 6. POST /cards/{card}/freeze
+ *    Middleware: auth:sanctum + throttle:10,1 + pin.recent
+ *    Response: { data: { card: { ...status: "frozen" } } }
+ *
+ * 7. POST /cards/{card}/unfreeze
+ *    Middleware: auth:sanctum + throttle:10,1 + pin.recent
+ *    Response: { data: { card: { ...status: "active" } } }
+ *
+ * 8. POST /cards/{card}/close
+ *    Middleware: auth:sanctum + throttle:10,1 + pin.recent
+ *    Response: { data: { card: { ...status: "closed" } } }
+ *    ⚠️ لا يمكن التراجع!
+ *
+ * ─── ملاحظات ───
+ * - الـ {card} parameter = id البطاقة (رقم)
+ * - جميع endpoints الإدارة تحتاج pin.recent (تأكيد PIN مسبق)
+ *
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {

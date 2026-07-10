@@ -1,3 +1,82 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📱 صفحة الإشعارات + تحديات 3DS + Firebase Push Notifications
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ─── APIs المستخدمة ───
+ *
+ * 1. GET /notifications?page=1&limit=20
+ *    Response (200): {
+ *      success: true,
+ *      data: {
+ *        notifications: [...],
+ *        total: 45,
+ *        total_pages: 3,
+ *        current_page: 1,
+ *        per_page: 20,
+ *        notifications_count: 45
+ *      }
+ *    }
+ *
+ * 2. POST /notifications/mark-as-read?id={notificationId}
+ *    Response (200): { success: true, message: "تم تمييز الإشعار كمقروء بنجاح" }
+ *
+ * 3. POST /notifications/mark-all-as-read
+ *    Response (200): { success: true, message: "تم تمييز 12 إشعار كمقروء", data: { marked_count: 12 } }
+ *
+ * 4. GET /card-3ds
+ *    Response: {
+ *      data: {
+ *        challenges: [{
+ *          id: 5,
+ *          provider_code: "provider_abc",
+ *          merchant_name: "Amazon",
+ *          amount: 29.99,
+ *          currency: "USD",
+ *          verification_type: "otp" | "http",
+ *          status: "pending",
+ *          status_label: "بانتظار التأكيد",
+ *          expires_at: "2025-01-15T10:05:00+00:00"
+ *        }]
+ *      }
+ *    }
+ *
+ * 5. POST /card-3ds/{challenge}/reveal-otp
+ *    Response: { data: { otp: "482951" } }
+ *    ⚠️ مرة واحدة فقط — لا يمكن إعادة الكشف
+ *
+ * 6. POST /card-3ds/{challenge}/approve
+ *    Response: { message: "تمت الموافقة على التحدي" }
+ *
+ * 7. POST /card-3ds/{challenge}/deny
+ *    Response: { message: "تم رفض التحدي" }
+ *
+ * ─── Firebase Push Notifications (FCM) ───
+ *
+ * 8. POST /user/device-tokens
+ *    الوظيفة: تسجيل توكن FCM بعد منح الإذن
+ *    Request: { token: "...", device_type: "web", device_name: "Chrome", app_version: "1.0.0" }
+ *    Response (201): { success: true, data: { id: 5, device_type: "web" } }
+ *
+ * 9. POST /user/device-tokens/{token}/ping
+ *    الوظيفة: تحديث last_used_at (يُستدعى دورياً أو عند فتح التطبيق)
+ *    Response (200): { success: true, data: { last_used_at: "..." } }
+ *
+ * 10. POST /user/device-tokens/testFirebase
+ *     الوظيفة: إشعار تجريبي لجميع أجهزة المستخدم
+ *
+ * ─── أنواع Push Notifications ───
+ * - type: "3ds_challenge" → تحدي جديد → يُضاف مباشرة للقائمة
+ * - type: "card_operation" → عملية بطاقة اكتملت (issue/topup)
+ * - type: "card_status" → تغيّر حالة بطاقة
+ * - type: "general" → إشعار عام
+ *
+ * ─── Broadcast Channels (WebSocket/Reverb) ───
+ * - private-App.Models.User.{userId} → إشعارات المستخدم الشخصية
+ *
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 import { useState, useEffect } from 'react';
 import {
     getNotifications,
@@ -7,9 +86,12 @@ import {
     reveal3dsOtp,
     approve3dsChallenge,
     deny3dsChallenge,
+    registerDeviceToken,
+    testFirebaseNotification,
 } from '../lib/api';
+import { requestNotificationPermission, onForegroundMessage, initFirebase } from '../lib/firebase';
 import toast from 'react-hot-toast';
-import { Bell, CheckCheck, ShieldAlert, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Bell, CheckCheck, ShieldAlert, Eye, CheckCircle, XCircle, Clock, BellRing, Send } from 'lucide-react';
 import BackButton from '../components/BackButton';
 
 export default function NotificationsPage() {
@@ -18,15 +100,98 @@ export default function NotificationsPage() {
     const [loading, setLoading] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
     const [actionLoading, setActionLoading] = useState('');
+    const [pushEnabled, setPushEnabled] = useState(false);
+    const [pushLoading, setPushLoading] = useState(false);
 
     useEffect(() => {
         loadData();
+        checkPushStatus();
+        setupForegroundListener();
     }, []);
 
+    // ─── Firebase Push: الاستماع للإشعارات أثناء تواجد المستخدم (foreground) ───
+    const setupForegroundListener = () => {
+        try {
+            initFirebase();
+            onForegroundMessage(payload => {
+                console.log('📩 Push received:', payload);
+                const data = payload.data || {};
+
+                // عند وصول تحدي 3DS جديد → أضفه مباشرة للقائمة
+                if (data.type === '3ds_challenge') {
+                    const newChallenge = {
+                        id: parseInt(data.challenge_id),
+                        provider_code: data.provider_code,
+                        merchant_name: data.merchant_name,
+                        amount: parseFloat(data.amount),
+                        currency: data.currency || 'USD',
+                        verification_type: data.verification_type,
+                        status: 'pending',
+                        status_label: 'بانتظار التأكيد',
+                        expires_at: data.expires_at,
+                    };
+                    setChallenges(prev => {
+                        if (prev.find(c => c.id === newChallenge.id)) return prev;
+                        return [newChallenge, ...prev];
+                    });
+                    toast(payload.notification?.title || 'تحدي 3DS جديد!', {
+                        icon: '🛡️',
+                        duration: 8000,
+                    });
+                } else {
+                    // إشعار عام → أعد تحميل الإشعارات
+                    toast(payload.notification?.title || 'إشعار جديد', { icon: '🔔' });
+                    loadData();
+                }
+            });
+        } catch (e) {
+            console.warn('Firebase foreground listener not available:', e);
+        }
+    };
+
+    // ─── تفعيل Push Notifications ───
+    const checkPushStatus = () => {
+        if ('Notification' in window) {
+            setPushEnabled(Notification.permission === 'granted' && !!localStorage.getItem('fcm_token'));
+        }
+    };
+
+    const handleEnablePush = async () => {
+        setPushLoading(true);
+        try {
+            const token = await requestNotificationPermission();
+            if (token) {
+                // تسجيل التوكن في السيرفر
+                await registerDeviceToken(token);
+                localStorage.setItem('fcm_token', token);
+                setPushEnabled(true);
+                toast.success('تم تفعيل الإشعارات الفورية');
+            } else {
+                toast.error('لم يتم منح إذن الإشعارات');
+            }
+        } catch (err) {
+            console.error('Push registration error:', err);
+            toast.error('فشل في تفعيل الإشعارات');
+        } finally {
+            setPushLoading(false);
+        }
+    };
+
+    // ─── إرسال إشعار تجريبي ───
+    const handleTestNotification = async () => {
+        try {
+            await testFirebaseNotification();
+            toast.success('تم إرسال إشعار تجريبي');
+        } catch {
+            toast.error('فشل إرسال الإشعار التجريبي');
+        }
+    };
+
+    // ─── تحميل البيانات ───
     const loadData = async () => {
         try {
             const [notifRes, challengeRes] = await Promise.allSettled([
-                getNotifications({ per_page: 30 }),
+                getNotifications({ page: 1, limit: 20 }),
                 get3dsChallenges(),
             ]);
 
@@ -67,7 +232,7 @@ export default function NotificationsPage() {
         }
     };
 
-    // 3DS actions
+    // ─── 3DS Challenge Actions ───
     const handleRevealOtp = async challenge => {
         setActionLoading(`otp-${challenge.id}`);
         try {
@@ -75,7 +240,6 @@ export default function NotificationsPage() {
             const otp = res.data.data?.otp;
             if (otp) {
                 toast.success(`رمز التحقق: ${otp}`, { duration: 10000 });
-                // Remove from list after reveal
                 setChallenges(prev => prev.filter(c => c.id !== challenge.id));
             }
         } catch (err) {
@@ -142,6 +306,46 @@ export default function NotificationsPage() {
                 )}
             </div>
 
+            {/* Push Notification Banner */}
+            {!pushEnabled && (
+                <div className="bg-gradient-to-l from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                            <BellRing size={20} className="text-purple-600" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-semibold text-gray-800 text-sm">الإشعارات الفورية</p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                فعّل الإشعارات لاستقبال تحديات 3DS وتحديثات البطاقة لحظياً
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleEnablePush}
+                            disabled={pushLoading}
+                            className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                        >
+                            {pushLoading ? '...' : 'تفعيل'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {pushEnabled && (
+                <div className="flex items-center justify-between px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle size={14} className="text-green-600" />
+                        <span className="text-xs text-green-700 font-medium">الإشعارات الفورية مفعّلة</span>
+                    </div>
+                    <button
+                        onClick={handleTestNotification}
+                        className="flex items-center gap-1 text-xs text-blue-600 font-medium hover:text-blue-700"
+                    >
+                        <Send size={12} />
+                        تجريبي
+                    </button>
+                </div>
+            )}
+
             {/* 3DS Challenges */}
             {challenges.length > 0 && (
                 <div className="space-y-3">
@@ -174,7 +378,6 @@ export default function NotificationsPage() {
                                 </div>
                             </div>
 
-                            {/* Actions based on verification type */}
                             {challenge.verification_type === 'otp' ? (
                                 <button
                                     onClick={() => handleRevealOtp(challenge)}

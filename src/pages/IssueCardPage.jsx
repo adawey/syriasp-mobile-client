@@ -1,3 +1,47 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📱 صفحة إصدار بطاقة جديدة — التسجيل مع المزوّد + إصدار البطاقة
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ─── APIs المستخدمة (بالترتيب) ───
+ *
+ * 1. GET /card-providers
+ *    الوظيفة: جلب قائمة مزوّدي البطاقات المتاحين
+ *    Response: {
+ *      data: {
+ *        providers: [{
+ *          public_code: "provider_abc",
+ *          display_name: "اسم المزوّد",
+ *          capabilities: { requires_registration, requires_kyc, supports_topup, supports_freeze, supports_close, supports_3ds },
+ *          min_initial_balance_usd: 10.0,
+ *          min_recharge_amount_usd: 5.0,
+ *          fixed_initial_balance_usd: null,
+ *          fees: { apply_fee_usd: 2.0, recharge_fee_percent: 3.5 }
+ *        }]
+ *      }
+ *    }
+ *
+ * 2. GET /card-providers/registration-status?public_code=provider_abc
+ *    الوظيفة: جلب حالة تسجيل المستخدم و KYC مع المزوّد
+ *    Response: { data: { registered: true, status: "active", kyc_status: "approved", kyc_approved: true, failure_reason: null } }
+ *
+ * 3. POST /card-providers/register
+ *    Middleware: auth:sanctum + throttle:10,1
+ *    Request: { public_code: "provider_abc" }
+ *    Response: { data: { status: "active", kyc_status: "approved" } }
+ *
+ * 4. POST /cards/issue
+ *    Middleware: auth:sanctum + throttle:10,1 + pin.recent
+ *    Request: { public_code: "provider_abc", name: "بطاقة التسوق" }
+ *    Response (202): { data: { operation_id: 42, status: "pending" } }
+ *    ⚠️ عملية غير متزامنة → push notification عند الاكتمال
+ *
+ * ─── Flow ───
+ * 1. اختيار المزوّد → 2. تسجيل (لو مطلوب) → 3. KYC (لو مطلوب) → 4. إصدار
+ *
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCardProviders, registerWithProvider, getRegistrationStatus, issueCard } from '../lib/api';

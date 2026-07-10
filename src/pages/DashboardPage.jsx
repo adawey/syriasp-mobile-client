@@ -1,3 +1,25 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📱 صفحة الرئيسية (Dashboard)
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ─── API المستخدم ───
+ *
+ * GET /user (يُحمّل من AuthContext عند بداية التطبيق)
+ * Response: {
+ *   data: {
+ *     user: {
+ *       id, name, email, phone,
+ *       balance: 100.00,
+ *       is_verified: true,
+ *       has_pin_code: true
+ *     }
+ *   }
+ * }
+ *
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, ShieldCheck, Wallet, BadgeCheck, ShoppingBag } from 'lucide-react';

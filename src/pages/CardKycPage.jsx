@@ -1,3 +1,52 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📱 صفحة توثيق KYC — رفع المستندات وإرسال طلب التوثيق
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ─── APIs المستخدمة ───
+ *
+ * 1. GET /card-providers/kyc/status?public_code=provider_abc
+ *    Response: {
+ *      data: {
+ *        kyc_status: "approved" | "pending" | "rejected" | "not_started",
+ *        kyc_approved: true/false,
+ *        failure_reason: null | "السبب",
+ *        readiness: { country_set, mobile_set, whatsapp_verified, whatsapp_verification_required, can_submit },
+ *        history: [{ event, label, status, reason, created_at }]
+ *      }
+ *    }
+ *
+ * 2. GET /card-providers/kyc/requirements?public_code=provider_abc&document_kind=national_id
+ *    Response: {
+ *      data: {
+ *        requirements: {
+ *          required_documents: ["front", "back", "selfie"],
+ *          optional_documents: ["face"],
+ *          supported_kinds: ["national_id", "passport", "driving_license"]
+ *        }
+ *      }
+ *    }
+ *
+ * 3. POST /card-providers/kyc/upload-document (multipart/form-data)
+ *    Middleware: auth:sanctum + throttle:20,1
+ *    Request: { public_code, slot: "front"|"back"|"selfie"|"face", file: File (max 8MB) }
+ *    Response: { data: { slot, path, filename, mime, view_url } }
+ *
+ * 4. POST /card-providers/kyc/submit
+ *    Middleware: auth:sanctum + throttle:5,1
+ *    Request: {
+ *      public_code, first_name, last_name, id_number, birthday (Y-m-d),
+ *      document_kind: "national_id" | "passport" | "driving_license",
+ *      staged_documents: [{ slot, path, filename, mime }]
+ *    }
+ *    Response (202): { data: { kyc_status: "pending" } }
+ *
+ * ─── Flow ───
+ * رفع مستندات واحد واحد (upload-document) → إرسال الطلب كامل (submit)
+ *
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getKycRequirements, getKycStatus, uploadKycDocument, submitKyc } from '../lib/api';

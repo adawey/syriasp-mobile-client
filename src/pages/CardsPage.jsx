@@ -1,3 +1,35 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📱 صفحة البطاقات — عرض جميع بطاقات المستخدم
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ─── API المستخدم ───
+ *
+ * GET /cards
+ * Middleware: auth:sanctum
+ *
+ * Response:
+ * {
+ *   "data": {
+ *     "cards": [
+ *       {
+ *         "id": 1,
+ *         "uuid": "abc-123-def",
+ *         "provider_code": "provider_abc",
+ *         "name": "بطاقتي الأساسية",
+ *         "masked_number": "**** **** **** 1234",
+ *         "balance": 50.00,
+ *         "status": "active" | "frozen" | "closed",
+ *         "status_label": "نشطة",
+ *         "created_at": "2025-01-10T08:00:00+00:00"
+ *       }
+ *     ]
+ *   }
+ * }
+ *
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCards } from '../lib/api';

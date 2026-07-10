@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getUser, logout as apiLogout } from '../lib/api';
+import { getUser, logout as apiLogout, pingDeviceToken } from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -25,6 +25,11 @@ export function AuthProvider({ children }) {
             if (res.data.data.whatsapp_verification_required !== undefined) {
                 setWhatsappVerificationRequired(res.data.data.whatsapp_verification_required);
             }
+            // Ping FCM token عند فتح التطبيق (تحديث last_used_at)
+            const fcmToken = localStorage.getItem('fcm_token');
+            if (fcmToken) {
+                pingDeviceToken(fcmToken).catch(() => {});
+            }
         } catch {
             localStorage.removeItem('token');
             setToken(null);
@@ -41,6 +46,8 @@ export function AuthProvider({ children }) {
 
     const logout = async () => {
         try {
+            // حذف FCM token المحلي عند تسجيل الخروج
+            localStorage.removeItem('fcm_token');
             await apiLogout();
         } catch {
             // ignore
