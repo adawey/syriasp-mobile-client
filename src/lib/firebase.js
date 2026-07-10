@@ -67,18 +67,39 @@ export async function requestNotificationPermission() {
             return null;
         }
 
+        // تحقق من الحالة الحالية أولاً
+        if (Notification.permission === 'denied') {
+            console.warn('Notifications are blocked by user. Please enable from browser settings.');
+            return null;
+        }
+
         const permission = await Notification.requestPermission();
+        console.log('Notification permission result:', permission);
+
         if (permission !== 'granted') {
-            console.warn('Notification permission denied');
+            console.warn('Notification permission denied:', permission);
             return null;
         }
 
         if (!messaging) {
-            initFirebase();
+            const initialized = initFirebase();
+            if (!initialized) {
+                console.error('Failed to initialize Firebase');
+                return null;
+            }
         }
 
         // التسجيل في Service Worker
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        let registration;
+        try {
+            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('Service Worker registered:', registration);
+            // انتظر حتى يصبح active
+            await navigator.serviceWorker.ready;
+        } catch (swError) {
+            console.error('Service Worker registration failed:', swError);
+            return null;
+        }
 
         const token = await getToken(messaging, {
             vapidKey: VAPID_KEY,
@@ -86,8 +107,7 @@ export async function requestNotificationPermission() {
         });
 
         if (token) {
-            console.log('FCM Token:', token);
-            // حفظ الـ token محلياً لاستخدامه عند تسجيل الخروج
+            console.log('FCM Token obtained:', token);
             localStorage.setItem('fcm_token', token);
             return token;
         }

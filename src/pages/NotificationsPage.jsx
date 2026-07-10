@@ -117,6 +117,9 @@ export default function NotificationsPage() {
                 console.log('📩 Push received:', payload);
                 const data = payload.data || {};
 
+                // ═══ عرض System Notification حتى لو التطبيق مفتوح ═══
+                showBrowserNotification(payload);
+
                 // عند وصول تحدي 3DS جديد → أضفه مباشرة للقائمة
                 if (data.type === '3ds_challenge') {
                     const newChallenge = {
@@ -149,6 +152,30 @@ export default function NotificationsPage() {
         }
     };
 
+    // ─── عرض إشعار المتصفح (system notification) حتى لو التطبيق مفتوح ───
+    const showBrowserNotification = payload => {
+        if (Notification.permission !== 'granted') return;
+
+        const title = payload.notification?.title || 'SyriaSP';
+        const options = {
+            body: payload.notification?.body || '',
+            icon: '/vite.svg',
+            badge: '/vite.svg',
+            tag: payload.data?.type || 'general',
+            vibrate: payload.data?.type === '3ds_challenge' ? [200, 100, 200, 100, 200] : [200, 100, 200],
+            requireInteraction: payload.data?.type === '3ds_challenge',
+        };
+
+        // عرض الإشعار عبر Service Worker (أفضل) أو مباشرة
+        if (navigator.serviceWorker?.controller) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, options);
+            });
+        } else {
+            new Notification(title, options);
+        }
+    };
+
     // ─── تفعيل Push Notifications ───
     const checkPushStatus = () => {
         if ('Notification' in window) {
@@ -159,6 +186,15 @@ export default function NotificationsPage() {
     const handleEnablePush = async () => {
         setPushLoading(true);
         try {
+            // تحقق أولاً لو الإشعارات محظورة من المتصفح
+            if ('Notification' in window && Notification.permission === 'denied') {
+                toast.error('الإشعارات محظورة من المتصفح.\nاضغط على 🔒 بجوار العنوان → Notifications → Allow', {
+                    duration: 6000,
+                });
+                setPushLoading(false);
+                return;
+            }
+
             const token = await requestNotificationPermission();
             if (token) {
                 // تسجيل التوكن في السيرفر
@@ -167,7 +203,12 @@ export default function NotificationsPage() {
                 setPushEnabled(true);
                 toast.success('تم تفعيل الإشعارات الفورية');
             } else {
-                toast.error('لم يتم منح إذن الإشعارات');
+                // توضيح السبب
+                if ('Notification' in window && Notification.permission === 'denied') {
+                    toast.error('تم رفض الإذن. فعّل الإشعارات من إعدادات المتصفح', { duration: 5000 });
+                } else {
+                    toast.error('فشل في الحصول على توكن الإشعارات. تأكد أنك على HTTPS أو localhost');
+                }
             }
         } catch (err) {
             console.error('Push registration error:', err);
