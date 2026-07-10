@@ -60,10 +60,6 @@ export default function PinPage() {
         }
     };
 
-    const handleSkip = () => {
-        navigate('/', { replace: true });
-    };
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700 p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
@@ -93,10 +89,6 @@ export default function PinPage() {
                 </div>
 
                 {loading && <div className="text-center text-sm text-gray-500 mb-4">جاري التحقق...</div>}
-
-                <button onClick={handleSkip} className="w-full text-gray-500 text-sm py-2 hover:text-gray-700">
-                    تخطي (PIN غير مفعّل حالياً)
-                </button>
             </div>
         </div>
     );

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Direct API calls to backend
-const BASE_URL = 'https://sw-games.net/api';
+// In dev mode use the Vite proxy (/api → sw-games.net), in production use absolute URL
+const BASE_URL = import.meta.env.DEV ? '/api' : 'https://sw-games.net/api';
 
 const api = axios.create({
     baseURL: BASE_URL,

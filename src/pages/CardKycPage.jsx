@@ -167,18 +167,6 @@ export default function CardKycPage() {
                 {status?.failure_reason && <p className="text-xs text-red-500 mt-2">{status.failure_reason}</p>}
             </div>
 
-            {/* Readiness checklist */}
-            {status?.readiness && !status.readiness.can_submit && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 space-y-2">
-                    <p className="font-medium text-yellow-800 text-sm">متطلبات قبل التقديم:</p>
-                    <CheckItem ok={status.readiness.country_set} label="تحديد الدولة في الملف الشخصي" />
-                    <CheckItem ok={status.readiness.mobile_set} label="إضافة رقم الهاتف" />
-                    {status.readiness.whatsapp_verification_required && (
-                        <CheckItem ok={status.readiness.whatsapp_verified} label="توثيق رقم الواتساب" />
-                    )}
-                </div>
-            )}
-
             {/* Already approved */}
             {isApproved && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-2">
@@ -196,7 +184,7 @@ export default function CardKycPage() {
             )}
 
             {/* Submit form */}
-            {!isApproved && !isPending && status?.readiness?.can_submit !== false && (
+            {!isApproved && !isPending && (
                 <form onSubmit={handleSubmit} className="bg-white rounded-xl border p-4 space-y-4">
                     <h3 className="font-semibold text-gray-800">بيانات التوثيق</h3>
 
@@ -347,19 +335,6 @@ function StatusBadge({ status }) {
     };
     const info = map[status] || map.not_started;
     return <span className={`text-xs px-2 py-1 rounded-full font-medium ${info.color}`}>{info.text}</span>;
-}
-
-function CheckItem({ ok, label }) {
-    return (
-        <div className="flex items-center gap-2 text-sm">
-            {ok ? (
-                <CheckCircle size={14} className="text-green-500" />
-            ) : (
-                <AlertCircle size={14} className="text-yellow-500" />
-            )}
-            <span className={ok ? 'text-green-700' : 'text-yellow-700'}>{label}</span>
-        </div>
-    );
 }
 
 function slotLabel(slot) {

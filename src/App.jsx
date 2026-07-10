@@ -16,8 +16,8 @@ import VerifyWhatsAppPage from './pages/VerifyWhatsAppPage';
 import OrdersPage from './pages/OrdersPage';
 import Layout from './components/Layout';
 
-function ProtectedRoute({ children }) {
-    const { token, loading } = useAuth();
+function ProtectedRoute({ children, requirePin = false }) {
+    const { token, loading, pinVerified } = useAuth();
     if (loading)
         return (
             <div className="flex items-center justify-center h-screen">
@@ -25,6 +25,7 @@ function ProtectedRoute({ children }) {
             </div>
         );
     if (!token) return <Navigate to="/login" replace />;
+    if (requirePin && !pinVerified) return <Navigate to="/pin" replace />;
     return children;
 }
 
@@ -43,7 +44,7 @@ function AppRoutes() {
             <Route
                 path="/"
                 element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requirePin>
                         <Layout />
                     </ProtectedRoute>
                 }
