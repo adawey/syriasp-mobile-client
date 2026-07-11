@@ -343,37 +343,125 @@ export default function CardDetailPage() {
             {/* Transactions */}
             <div>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-800">المعاملات</h3>
-                    <button onClick={loadCard} className="text-blue-600">
+                    <h3 className="font-semibold text-gray-800">سجل المعاملات</h3>
+                    <button onClick={loadCard} className="text-blue-600 hover:text-blue-800 transition-colors">
                         <RefreshCw size={16} />
                     </button>
                 </div>
                 {transactions.length === 0 ? (
-                    <p className="text-center text-gray-400 py-4 text-sm">لا توجد معاملات</p>
+                    <div className="text-center py-8 bg-gray-50 rounded-xl">
+                        <DollarSign size={32} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-gray-400 text-sm">لا توجد معاملات بعد</p>
+                    </div>
                 ) : (
                     <div className="space-y-2">
                         {transactions.map((tx, i) => {
                             const amount = Number(tx.amount);
+                            const feeAmount = Number(tx.fee_amount || 0);
+                            const totalAmount = Number(tx.total_amount || amount);
                             const isDebit =
                                 tx.type_description === 'purchase' ||
                                 tx.type_description === 'authorization' ||
+                                tx.type_description === 'fee' ||
+                                tx.type_description === 'withdrawal' ||
                                 amount < 0;
-                            const displayAmount = Math.abs(amount);
+                            const displayAmount = Math.abs(totalAmount);
+
+                            // Map type_description to Arabic labels
+                            const typeLabels = {
+                                purchase: 'شراء',
+                                authorization: 'تفويض',
+                                topup: 'شحن',
+                                refund: 'استرداد',
+                                fee: 'رسوم',
+                                withdrawal: 'سحب',
+                                credit: 'إيداع',
+                                reversal: 'إلغاء معاملة',
+                            };
+                            const typeLabel = typeLabels[tx.type_description] || tx.type_description || 'معاملة';
+
+                            // Status mapping
+                            const statusLabels = {
+                                completed: 'مكتملة',
+                                pending: 'قيد التنفيذ',
+                                failed: 'فاشلة',
+                                reversed: 'ملغاة',
+                                declined: 'مرفوضة',
+                            };
+                            const statusLabel = statusLabels[tx.status] || tx.status || '';
+                            const statusColors = {
+                                completed: 'bg-green-50 text-green-700',
+                                pending: 'bg-yellow-50 text-yellow-700',
+                                failed: 'bg-red-50 text-red-700',
+                                reversed: 'bg-gray-100 text-gray-600',
+                                declined: 'bg-red-50 text-red-700',
+                            };
+                            const statusColor = statusColors[tx.status] || 'bg-gray-50 text-gray-600';
 
                             return (
-                                <div key={tx.id || i} className="bg-white border rounded-lg p-3">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <p className="text-sm font-medium text-gray-800 flex-1 ml-2" dir="ltr">
-                                            {tx.narrative || tx.type_description || 'معاملة'}
-                                        </p>
-                                        <span
-                                            className={`font-bold text-sm whitespace-nowrap ${isDebit ? 'text-red-600' : 'text-green-600'}`}
+                                <div
+                                    key={tx.id || i}
+                                    className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    {/* Top row: icon + narrative + amount */}
+                                    <div className="flex items-start gap-3">
+                                        {/* Transaction type icon */}
+                                        <div
+                                            className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
+                                                isDebit ? 'bg-red-100' : 'bg-green-100'
+                                            }`}
                                         >
-                                            {isDebit ? '-' : '+'}
-                                            {displayAmount.toFixed(2)} $
-                                        </span>
+                                            <span className={`text-lg ${isDebit ? 'text-red-600' : 'text-green-600'}`}>
+                                                {isDebit ? '↓' : '↑'}
+                                            </span>
+                                        </div>
+
+                                        {/* Details */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p
+                                                    className="text-sm font-semibold text-gray-900 truncate"
+                                                    dir="ltr"
+                                                    title={tx.narrative || ''}
+                                                >
+                                                    {tx.narrative || typeLabel}
+                                                </p>
+                                                <span
+                                                    className={`font-bold text-base whitespace-nowrap ${isDebit ? 'text-red-600' : 'text-green-600'}`}
+                                                    dir="ltr"
+                                                >
+                                                    {isDebit ? '−' : '+'}${displayAmount.toFixed(2)}
+                                                </span>
+                                            </div>
+
+                                            {/* Type label when narrative exists */}
+                                            {tx.narrative && (
+                                                <p className="text-xs text-gray-500 mt-0.5">{typeLabel}</p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between">
+
+                                    {/* Fee row (if any fee) */}
+                                    {feeAmount > 0 && (
+                                        <div className="mr-12 mt-1.5 flex items-center gap-1">
+                                            <span className="text-xs text-gray-400">الرسوم:</span>
+                                            <span className="text-xs text-red-500 font-medium" dir="ltr">
+                                                −${feeAmount.toFixed(2)}
+                                            </span>
+                                            {totalAmount !== Math.abs(amount) && (
+                                                <>
+                                                    <span className="text-xs text-gray-300 mx-1">|</span>
+                                                    <span className="text-xs text-gray-400">الإجمالي:</span>
+                                                    <span className="text-xs text-gray-700 font-medium" dir="ltr">
+                                                        ${Math.abs(totalAmount).toFixed(2)}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Bottom row: date + status + currency */}
+                                    <div className="mr-12 mt-2 flex items-center justify-between flex-wrap gap-1">
                                         <span className="text-xs text-gray-400">
                                             {tx.created_at
                                                 ? new Date(tx.created_at).toLocaleDateString('ar-EG', {
@@ -385,13 +473,20 @@ export default function CardDetailPage() {
                                                   })
                                                 : ''}
                                         </span>
-                                        <span
-                                            className={`text-xs px-1.5 py-0.5 rounded ${
-                                                isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'
-                                            }`}
-                                        >
-                                            {isDebit ? 'خصم' : 'شحن'}
-                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            {tx.currency && (
+                                                <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                                                    {tx.currency}
+                                                </span>
+                                            )}
+                                            {statusLabel && (
+                                                <span
+                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}
+                                                >
+                                                    {statusLabel}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -402,7 +497,7 @@ export default function CardDetailPage() {
                     <button
                         onClick={loadMoreTransactions}
                         disabled={loadingMore}
-                        className="w-full mt-3 py-2 text-sm text-blue-600 font-medium bg-blue-50 rounded-lg hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                        className="w-full mt-3 py-2.5 text-sm text-blue-600 font-medium bg-blue-50 rounded-xl hover:bg-blue-100 disabled:opacity-50 transition-colors"
                     >
                         {loadingMore
                             ? 'جاري التحميل...'
