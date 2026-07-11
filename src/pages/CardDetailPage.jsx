@@ -360,72 +360,35 @@ export default function CardDetailPage() {
                             const feeAmount = Number(tx.fee_amount || 0);
                             const totalAmount = Number(tx.total_amount || tx.amount || 0);
 
-                            // MyPal transType codes + text-based type_description
-                            const typeDesc = String(tx.type_description || '');
+                            // Determine debit/credit from type_description enum value
+                            const typeDesc = tx.type_description || '';
                             const isDebit =
-                                typeDesc === '170' ||
                                 typeDesc === 'purchase' ||
-                                typeDesc === '172' ||
                                 typeDesc === 'fee' ||
-                                typeDesc === '173' ||
-                                typeDesc === 'withdrawal' ||
-                                typeDesc === '174' ||
-                                typeDesc === 'authorization' ||
+                                typeDesc === 'atm_withdrawal' ||
+                                typeDesc === 'pre_authorization' ||
                                 amount < 0;
 
                             const displayAmount = Math.abs(totalAmount || amount);
 
-                            // Map type codes + text to Arabic labels
-                            const typeLabels = {
-                                170: 'استهلاك',
-                                purchase: 'استهلاك',
-                                171: 'استرداد',
-                                refund: 'استرداد',
-                                172: 'رسوم',
-                                fee: 'رسوم',
-                                173: 'سحب صراف',
-                                withdrawal: 'سحب صراف',
-                                174: 'حجز مسبق',
-                                authorization: 'حجز مسبق',
-                                topup: 'شحن',
-                                credit: 'إيداع',
-                                reversal: 'إلغاء معاملة',
-                            };
-                            const typeLabel = typeLabels[typeDesc] || typeDesc || 'معاملة';
+                            // Use the Arabic label from the API directly
+                            const typeLabel = tx.type_label || typeDesc || 'معاملة';
 
-                            // MyPal transStatus codes + text-based status
-                            const statusDesc = String(tx.status ?? '');
-                            const statusLabels = {
-                                0: 'تهيئة',
-                                1: 'معالجة',
-                                2: 'مكتملة',
-                                3: 'فاشلة',
-                                4: 'ملغاة',
-                                5: 'استرداد معلّق',
-                                6: 'استرداد مستلم',
-                                7: 'استرداد فاشل',
-                                8: 'مقبولة',
-                                9: 'منشأة',
-                                10: 'مرفوضة',
-                                completed: 'مكتملة',
-                                pending: 'قيد التنفيذ',
-                                failed: 'فاشلة',
-                                reversed: 'ملغاة',
-                                declined: 'مرفوضة',
-                            };
-                            const statusLabel = statusLabels[statusDesc] || statusDesc || '';
+                            // Status — use API labels directly
+                            const statusLabel = tx.status_label || '';
+                            const status = tx.status || '';
 
-                            // Status colors
-                            const successStatuses = ['2', '6', '8', 'completed'];
-                            const pendingStatuses = ['0', '1', '5', '9', 'pending'];
-                            const failStatuses = ['3', '7', '10', 'failed', 'declined'];
-                            const cancelStatuses = ['4', 'reversed'];
+                            // Status colors based on enum string values
+                            const successStatuses = ['completed', 'refund_received', 'accepted'];
+                            const pendingStatuses = ['initialized', 'processing', 'refund_pending', 'created'];
+                            const failStatuses = ['failed', 'refund_failed', 'declined'];
+                            const cancelStatuses = ['cancelled'];
 
                             let statusColor = 'bg-gray-50 text-gray-600';
-                            if (successStatuses.includes(statusDesc)) statusColor = 'bg-green-50 text-green-700';
-                            else if (pendingStatuses.includes(statusDesc)) statusColor = 'bg-yellow-50 text-yellow-700';
-                            else if (failStatuses.includes(statusDesc)) statusColor = 'bg-red-50 text-red-700';
-                            else if (cancelStatuses.includes(statusDesc)) statusColor = 'bg-gray-100 text-gray-600';
+                            if (successStatuses.includes(status)) statusColor = 'bg-green-50 text-green-700';
+                            else if (pendingStatuses.includes(status)) statusColor = 'bg-yellow-50 text-yellow-700';
+                            else if (failStatuses.includes(status)) statusColor = 'bg-red-50 text-red-700';
+                            else if (cancelStatuses.includes(status)) statusColor = 'bg-gray-100 text-gray-600';
 
                             return (
                                 <div
