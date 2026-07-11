@@ -17,7 +17,7 @@
  *    Middleware: auth:sanctum + throttle:30,1
  *    Response: {
  *      data: {
- *        transactions: [{ id, amount, fee_amount, total_amount, currency, type_description, narrative, status, created_at }],
+ *        transactions: [{ id, amount, fee_amount, total_amount, currency, type_description, narrative, status, created_at, fee_breakdown: [{ label, amount, currency }] }],
  *        pagination: { current_page, last_page, per_page, total }
  *      }
  *    }
@@ -30,7 +30,7 @@
  * 5. POST /cards/{card}/topup
  *    Middleware: auth:sanctum + throttle:10,1 + pin.recent
  *    Request: { amount: 25.00 }
- *    Response (202): { data: { operation_id: 43, status: "pending" } }
+ *    Response (202): { data: { operation_id: 43, status: "pending", fee_breakdown: [{ label, amount, currency }] } }
  *    ⚠️ عملية غير متزامنة → push notification عند الاكتمال
  *
  * 6. POST /cards/{card}/freeze
@@ -188,7 +188,13 @@ export default function CardDetailPage() {
         setActionLoading('topup');
         try {
             const res = await topupCard(id, { amount: Number(topupAmount) });
-            toast.success(res.data.message || 'تم شحن البطاقة بنجاح');
+            const breakdown = res.data.data?.fee_breakdown;
+            if (breakdown && breakdown.length > 0) {
+                const lines = breakdown.map(item => `${item.label}: ${item.amount} ${item.currency}`).join('\n');
+                toast.success(`${res.data.message || 'تم شحن البطاقة بنجاح'}\n\n${lines}`, { duration: 6000 });
+            } else {
+                toast.success(res.data.message || 'تم شحن البطاقة بنجاح');
+            }
             setTopupAmount('');
             setShowTopup(false);
             loadCard();
@@ -433,8 +439,19 @@ export default function CardDetailPage() {
                                         </div>
                                     </div>
 
-                                    {/* Fee row (if any fee) */}
-                                    {feeAmount > 0 && (
+                                    {/* Fee breakdown (detailed) */}
+                                    {tx.fee_breakdown && tx.fee_breakdown.length > 0 ? (
+                                        <div className="mr-12 mt-2 bg-gray-50 rounded-lg p-2.5 space-y-1">
+                                            {tx.fee_breakdown.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between">
+                                                    <span className="text-xs text-gray-500">{item.label}</span>
+                                                    <span className="text-xs font-medium text-gray-700" dir="ltr">
+                                                        {item.amount} {item.currency}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : feeAmount > 0 ? (
                                         <div className="mr-12 mt-1.5 flex items-center gap-1">
                                             <span className="text-xs text-gray-400">الرسوم:</span>
                                             <span className="text-xs text-red-500 font-medium" dir="ltr">
@@ -450,7 +467,7 @@ export default function CardDetailPage() {
                                                 </>
                                             )}
                                         </div>
-                                    )}
+                                    ) : null}
 
                                     {/* Bottom row: date + status + currency */}
                                     <div className="mr-12 mt-2 flex items-center justify-between flex-wrap gap-1">
