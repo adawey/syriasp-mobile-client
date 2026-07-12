@@ -13,10 +13,8 @@
  *          public_code: "provider_abc",
  *          display_name: "اسم المزوّد",
  *          capabilities: { requires_registration, requires_kyc, supports_topup, supports_freeze, supports_close, supports_3ds },
- *          min_initial_balance_usd: 10.0,
  *          min_recharge_amount_usd: 5.0,
- *          fixed_initial_balance_usd: null,
- *          fees: { apply_fee_usd: 2.0, recharge_fee_percent: 3.5 }
+ *          fees: { apply_fee_usd: 1.0, platform_markup_percent: 2.0, issuance_markup_usd: 2.0, issuance_total_usd: 4.0 }
  *        }]
  *      }
  *    }
@@ -56,7 +54,6 @@ export default function IssueCardPage() {
     const [regStatus, setRegStatus] = useState(null);
     const [loading, setLoading] = useState(true);
     const [issuing, setIssuing] = useState(false);
-    const [amount, setAmount] = useState('');
     const [cardName, setCardName] = useState('');
 
     useEffect(() => {
@@ -102,20 +99,10 @@ export default function IssueCardPage() {
         e.preventDefault();
         if (!selectedProvider) return;
 
-        const balanceValue = selectedProvider.fixed_initial_balance_usd
-            ? Number(selectedProvider.fixed_initial_balance_usd)
-            : Number(amount);
-
-        if (!balanceValue || balanceValue <= 0) {
-            toast.error('يرجى إدخال مبلغ الرصيد المبدئي');
-            return;
-        }
-
         setIssuing(true);
         try {
             const data = {
                 public_code: selectedProvider.public_code,
-                initial_balance: balanceValue,
                 name: cardName,
             };
 
@@ -167,9 +154,8 @@ export default function IssueCardPage() {
                                     <CreditCard size={20} className="text-gray-400" />
                                 </div>
                                 <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
-                                    {p.fees?.apply_fee_usd > 0 && <span>رسوم الإصدار: ${p.fees.apply_fee_usd}</span>}
-                                    {p.min_initial_balance_usd > 0 && (
-                                        <span>الحد الأدنى: ${p.min_initial_balance_usd}</span>
+                                    {p.fees?.issuance_total_usd > 0 && (
+                                        <span>رسوم الإصدار: ${p.fees.issuance_total_usd}</span>
                                     )}
                                     {p.capabilities?.supports_freeze && <span className="text-blue-500">✓ تجميد</span>}
                                     {p.capabilities?.supports_topup && <span className="text-green-500">✓ شحن</span>}
@@ -185,9 +171,9 @@ export default function IssueCardPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-semibold text-blue-800">{selectedProvider.display_name}</p>
-                                {selectedProvider.fees?.apply_fee_usd > 0 && (
+                                {selectedProvider.fees?.issuance_total_usd > 0 && (
                                     <p className="text-xs text-blue-600">
-                                        رسوم الإصدار: ${selectedProvider.fees.apply_fee_usd}
+                                        رسوم الإصدار: ${selectedProvider.fees.issuance_total_usd}
                                     </p>
                                 )}
                             </div>
@@ -266,32 +252,14 @@ export default function IssueCardPage() {
                                 />
                             </div>
 
-                            {selectedProvider.fixed_initial_balance_usd ? (
-                                <p className="text-sm text-gray-600">
-                                    الرصيد المبدئي ثابت: ${selectedProvider.fixed_initial_balance_usd}
+                            {selectedProvider.fees?.issuance_total_usd > 0 && (
+                                <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+                                    سيتم خصم{' '}
+                                    <span className="font-bold text-gray-800">
+                                        ${selectedProvider.fees.issuance_total_usd}
+                                    </span>{' '}
+                                    من رصيدك
                                 </p>
-                            ) : (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        الرصيد المبدئي (بالدولار)
-                                        {selectedProvider.min_initial_balance_usd > 0 && (
-                                            <span className="text-gray-400 mr-1">
-                                                - الحد الأدنى ${selectedProvider.min_initial_balance_usd}
-                                            </span>
-                                        )}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min={selectedProvider.min_initial_balance_usd || 1}
-                                        step="0.01"
-                                        value={amount}
-                                        onChange={e => setAmount(e.target.value)}
-                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                        placeholder={`${selectedProvider.min_initial_balance_usd || 5}`}
-                                        dir="ltr"
-                                        required
-                                    />
-                                </div>
                             )}
 
                             <button
