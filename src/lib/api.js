@@ -25,8 +25,8 @@ import { installDevInterceptors } from './devLogger';
  * =================================================================
  */
 
-// In dev mode use the Vite proxy (/api → sw-games.net), in production use absolute URL
-const BASE_URL = import.meta.env.DEV ? '/api' : 'https://mega-game.net/api';
+// Always use relative /api path — in dev Vite proxies it, in production nginx proxies it
+const BASE_URL = '/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
