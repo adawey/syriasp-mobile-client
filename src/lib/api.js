@@ -6,7 +6,7 @@ import { installDevInterceptors } from './devLogger';
  * 📱 SyriaSP Mobile Client — API Layer
  * =================================================================
  *
- * Base URL (production): https://sw-games.net/api
+ * Base URL (production): https://mega-game.net/api
  * Base URL (development): /api (Vite proxy)
  *
  * Authentication: Bearer Token (Sanctum)
@@ -26,15 +26,15 @@ import { installDevInterceptors } from './devLogger';
  */
 
 // In dev mode use the Vite proxy (/api → sw-games.net), in production use absolute URL
-const BASE_URL = import.meta.env.DEV ? '/api' : 'https://sw-games.net/api';
+const BASE_URL = import.meta.env.DEV ? '/api' : 'https://mega-game.net/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        appToken: 'new-adawe-12121',
-        appVersion: '4.0.3',
+        appToken: 'fcc5ca60b6b46296052a8c3bc99d834c',
+        appVersion: '1.0',
     },
 });
 

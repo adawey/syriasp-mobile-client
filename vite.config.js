@@ -7,7 +7,7 @@ export default defineConfig({
         port: 3333,
         proxy: {
             '/api': {
-                target: 'https://sw-games.net',
+                target: 'https://mega-game.net',
                 changeOrigin: true,
                 secure: false,
             },
